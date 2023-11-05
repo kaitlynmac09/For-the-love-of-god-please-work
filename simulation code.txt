@@ -1,0 +1,62 @@
+import random
+import matplotlib.pyplot as plt
+
+# Constants for the basketball court
+court_width = 50  # Standard half-court width in feet
+court_height = 47  # Standard half-court length in feet
+backboard_width = 6  # Standard backboard width in feet
+backboard_height = 3.5  # Standard backboard height in feet
+rim_height = 10  # Standard rim height in feet
+
+# Define the number of simulations
+num_simulations = 100
+
+# Initialize variables to count successful shots
+successful_shots = 0
+
+# Lists to store successful and unsuccessful shot locations
+successful_shot_locations = []
+unsuccessful_shot_locations = []
+
+# Create a figure for visualization
+plt.figure(figsize=(8, 6))
+plt.title("Basketball Shot Simulation")
+
+# Plot the basketball court
+plt.plot([0, 0, court_width, court_width, 0], [0, court_height, court_height, 0, 0], 'k-', linewidth=2)  # Court boundary
+plt.plot([0, court_width], [rim_height, rim_height], 'r-', linewidth=2)  # Rim
+plt.plot([backboard_width, backboard_width], [rim_height, rim_height + backboard_height], 'r-', linewidth=2)  # Backboard
+
+# Run the Monte Carlo simulation
+for _ in range(num_simulations):
+    # Generate random shot location (x, y) within the half court
+    x = random.uniform(0, court_width)
+    y = random.uniform(0, court_height)
+    
+    # Check if the shot hits the backboard
+    if 0 <= x <= backboard_width and rim_height <= y <= rim_height + backboard_height:
+        successful_shots += 1
+        successful_shot_locations.append((x, y))
+    else:
+        unsuccessful_shot_locations.append((x, y))
+
+# Plot successful shots in green and unsuccessful shots in red
+for x, y in successful_shot_locations:
+    plt.scatter(x, y, c='green', marker='o', s=50, label='Successful Shots')
+for x, y in unsuccessful_shot_locations:
+    plt.scatter(x, y, c='red', marker='x', s=50, label='Unsuccessful Shots')
+
+# Calculate the percentage of successful shots
+success_percentage = (successful_shots / num_simulations) * 100
+
+# Print the results
+print(f"Number of shots: {num_simulations}")
+print(f"Number of successful shots: {successful_shots}")
+print(f"Percentage of successful shots: {success_percentage:.2f}%")
+
+# Show the plot
+plt.legend()
+plt.xlim(0, court_width)
+plt.ylim(0, court_height)
+plt.gca().invert_yaxis()  # Invert the y-axis to match the basketball court orientation
+plt.show()
