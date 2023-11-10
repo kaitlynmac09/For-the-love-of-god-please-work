@@ -3,10 +3,18 @@ import numpy as np
 
 # Constants
 GRAVITY = 9.8  # m/s^2, acceleration due to gravity
+NUM_SHOTS = 10  # number of shots to generate
+COURT_LENGTH = 20
+COURT_WIDTH = 15
+PLAYER_HEIGHT = 1.77
 BALL_RADIUS = 0.12  # meters (standard basketball size)
 HOOP_HEIGHT = 3.05  # meters (standard rim height)
 HOOP_WIDTH = 0.15  # meters (standard backboard width)
 HOOP_INNER_RADIUS = 0.225  # meters (inner radius of the ring)
+BACKBOARD_WIDTH = 1.83  # meters (width of the backboard)
+BACKBOARD_HEIGHT = 1.07  # meters (height of the backboard)
+BACKBOARD_CENTER_X = COURT_WIDTH / 2 # meters (x center of the backboard)
+BACKBOARD_CENTER_Z = HOOP_HEIGHT + BACKBOARD_HEIGHT / 2 # meters (y center of the backboard)  
 
 # Define a function to generate shot positions
 def generate_shot_positions(num_shots, court_width, court_length):
@@ -17,26 +25,36 @@ def generate_shot_positions(num_shots, court_width, court_length):
 # Define a function to plot the basketball hoop
 def plot_basketball_hoop(ax):
     # Plot backboard and rim in 3D
-    backboard_x = [0, 0]
-    backboard_y = [-HOOP_WIDTH / 2, HOOP_WIDTH / 2]
-    backboard_z = [0, 0]
+    backboard_x = [BACKBOARD_CENTER_X - BACKBOARD_WIDTH / 2, 
+                   BACKBOARD_CENTER_X - BACKBOARD_WIDTH / 2, 
+                   BACKBOARD_CENTER_X + BACKBOARD_WIDTH / 2, 
+                   BACKBOARD_CENTER_X + BACKBOARD_WIDTH / 2, 
+                   BACKBOARD_CENTER_X - BACKBOARD_WIDTH / 2]
+    backboard_y = [0, 0, 0, 0, 0] #[-HOOP_WIDTH / 2, HOOP_WIDTH / 2]
+    backboard_z = [BACKBOARD_CENTER_Z - BACKBOARD_HEIGHT / 2, 
+                   BACKBOARD_CENTER_Z + BACKBOARD_HEIGHT / 2, 
+                   BACKBOARD_CENTER_Z + BACKBOARD_HEIGHT / 2,
+                   BACKBOARD_CENTER_Z - BACKBOARD_HEIGHT / 2, 
+                   BACKBOARD_CENTER_Z - BACKBOARD_HEIGHT / 2]
 
     # Create a ring shape for the rim
     theta = np.linspace(0, 2 * np.pi, 100)
-    rim_x = HOOP_INNER_RADIUS * np.cos(theta)
-    rim_y = HOOP_INNER_RADIUS * np.sin(theta)
+    rim_x = HOOP_INNER_RADIUS * np.cos(theta) + COURT_WIDTH / 2
+    rim_y = HOOP_INNER_RADIUS * np.sin(theta) + HOOP_INNER_RADIUS
     rim_z = np.full(100, HOOP_HEIGHT)
 
-    ax.plot(backboard_x, backboard_y, backboard_z, color='red', linewidth=2)
+    ax.plot(backboard_x, backboard_y, backboard_z, color='blue', linewidth=2)
     ax.plot(rim_x, rim_y, rim_z, color='red')
-    ax.scatter(0.0, 0.0, HOOP_HEIGHT, c='red', marker='o', s=100, label='Rim')
+    ax.scatter(COURT_WIDTH / 2, 
+               COURT_LENGTH / 2, 
+               PLAYER_HEIGHT, 
+               c='orange', marker='o', s=100, label='Rim')
 
 # Define a function to calculate the trajectory
 def calculate_trajectory(position_x, position_y, rim_x, rim_y, rim_z):
-    g = GRAVITY
 
     # Calculate time of flight
-    time_flight = np.sqrt(2 * (rim_z - player_height) / g)
+    time_flight = np.sqrt(2 * (rim_z - PLAYER_HEIGHT) / GRAVITY)
 
     # Calculate initial velocity components
     v_x = (rim_x - position_x) / time_flight
@@ -47,27 +65,22 @@ def calculate_trajectory(position_x, position_y, rim_x, rim_y, rim_z):
 
     # Calculate trajectory coordinates
     trajectory_x = position_x + v_x * t_intervals
-    trajectory_y = position_y + v_y * t_intervals - 0.5 * g * t_intervals**2
+    trajectory_y = position_y + v_y * t_intervals - 0.5 * GRAVITY * t_intervals**2
 
     return trajectory_x, trajectory_y
 
-# Constants
-num_shots = 10  # number of shots to generate
-court_length = 47.0
-court_width = 50.0
-rim_height = 10.0
-player_height = 5.8
+
 
 # Generate and plot shots
-shot_positions_x, shot_positions_y = generate_shot_positions(num_shots, court_width, court_length)
+shot_positions_x, shot_positions_y = generate_shot_positions(NUM_SHOTS, COURT_WIDTH, COURT_LENGTH)
 
 # Initialize plot
-fig = plt.figure(figsize=(12, 8))
+fig = plt.figure(figsize=(10, 10))
 ax = fig.add_subplot(111, projection='3d')
 
 # Plot court
-ax.plot([0, 0, court_width, court_width, 0],
-        [0, court_length, court_length, 0, 0],
+ax.plot([0, 0, COURT_WIDTH, COURT_WIDTH, 0],
+        [0, COURT_LENGTH, COURT_LENGTH, 0, 0],
         zs=[0, 0, 0, 0, 0])
 
 # Plot backboard and rim
@@ -75,40 +88,40 @@ plot_basketball_hoop(ax)
 
 # Generate and plot shots
 successful_shots = 0
-for i in range(num_shots):
+for i in range(NUM_SHOTS):
     pos_x = shot_positions_x[i]
     pos_y = shot_positions_y[i]
 
-    rim_x = 0.0
-    rim_y = 25.0
-    rim_z = rim_height
+    rim_x = COURT_WIDTH / 2
+    rim_y = COURT_LENGTH / 2
+    rim_z = HOOP_HEIGHT
 
     traj_x, traj_y = calculate_trajectory(pos_x, pos_y, rim_x, rim_y, rim_z)
 
     # Check if shot hits backboard
     hit_backboard = (traj_x[-1] == 0.0
-                    and 7.5 <= traj_y[-1] <= rim_height)
+                    and 7.5 <= traj_y[-1] <= HOOP_HEIGHT)
 
     # Plot trajectory
     if hit_backboard:
-        ax.plot(traj_x, traj_y, np.full_like(traj_x, rim_height), color='green')
+        ax.plot(traj_x, traj_y, np.full_like(traj_x, HOOP_HEIGHT), color='green')
         successful_shots += 1
     else:
         ax.plot(traj_x, traj_y, color='red')
 
 # Calculate successful shot percentage
-successful_percentage = (successful_shots / num_shots) * 100
+successful_percentage = (successful_shots / NUM_SHOTS) * 100
 
 # Set plot limits and labels
-ax.set_xlim([-court_width / 2, court_width / 2])
-ax.set_ylim([0, court_length])
-ax.set_zlim([0, rim_height + 2])
+ax.set_xlim([0, COURT_LENGTH])
+ax.set_ylim([0, COURT_LENGTH])
+ax.set_zlim([0, COURT_LENGTH])
 ax.set_xlabel('X')
 ax.set_ylabel('Y')
 ax.set_zlabel('Z')
 
 # Display successful shot percentage
-ax.text(0.7 * court_width, 0.9 * court_length, rim_height,
+ax.text(0.7 * COURT_WIDTH, 0.9 * COURT_LENGTH, HOOP_HEIGHT,
         f'Successful Shots: {successful_percentage:.2f}%', fontsize=12)
 
 plt.show()
